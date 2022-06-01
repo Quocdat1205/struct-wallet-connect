@@ -261,7 +261,7 @@ class App extends React.Component<any, any> {
       coinbasewallet: {
         package: CoinbaseWalletSDK,
         options: {
-          appName: "Web3Modal Example App",
+          appName: "Coinbase",
           infuraId,
         },
       },
@@ -536,7 +536,6 @@ class App extends React.Component<any, any> {
             chainId={chainId}
             killSession={this.resetApp}
           />
-
           <SContent>
             {fetching ? (
               <Column center>
@@ -544,7 +543,8 @@ class App extends React.Component<any, any> {
                   <Loader />
                 </SContainer>
               </Column>
-            ) : !!assets && !!assets.length ? (
+            ) : address ? (
+              // !!assets && !!assets.length
               <SBalances>
                 <h3>Balances</h3>
                 <AccountAssets chainId={chainId} assets={assets} />
@@ -588,7 +588,7 @@ class App extends React.Component<any, any> {
                 </Column>
 
                 <Column>
-                  {list_insurance ? (
+                  {list_insurance &&
                     list_insurance.map((value, index) => {
                       return (
                         <Box key={index}>
@@ -598,15 +598,12 @@ class App extends React.Component<any, any> {
                           <p>ETH: {value["current_price"]}</p>
                         </Box>
                       );
-                    })
-                  ) : (
-                    <p>Please Buy Insurance!!!</p>
-                  )}
+                    })}
                 </Column>
               </SBalances>
             ) : (
               <SLanding center>
-                <h3>{`Connect wallet`}</h3>
+                <h3>{`Connect Wallet`}</h3>
                 <ConnectButton onClick={this.onConnect} />
               </SLanding>
             )}
