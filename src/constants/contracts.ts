@@ -1,3 +1,5 @@
+import { INSURANCE_ABI } from "./ABI";
+
 export interface ContractSetup {
   address: string;
   abi: any[];
@@ -29,5 +31,9 @@ export const DAI_CONTRACT: { [chainId: number]: ContractSetup } = {
         type: "function",
       },
     ],
+  },
+  42: {
+    address: "0x51882F7C0Ef9610BccD5F8e7f5Cb760e33860f99",
+    abi: INSURANCE_ABI.abi,
   },
 };

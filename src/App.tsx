@@ -20,14 +20,14 @@ import Loader from "./components/Loader";
 import ModalResult from "./components/ModalResult";
 import AccountAssets from "./components/AccountAssets";
 import ConnectButton from "./components/ConnectButton";
-
+import Swal from "sweetalert2";
 import { apiGetAccountAssets } from "./helpers/api";
 import {
   hashPersonalMessage,
   recoverPublicKey,
   recoverPersonalSignature,
   formatTestTransaction,
-  getChainData
+  getChainData,
 } from "./helpers/utilities";
 import { IAssetData } from "./helpers/types";
 import { fonts } from "./styles";
@@ -36,9 +36,16 @@ import {
   ETH_SIGN,
   PERSONAL_SIGN,
   DAI_BALANCE_OF,
-  DAI_TRANSFER
+  DAI_TRANSFER,
+  GET_ALL_BUYER,
+  BUY_INSURANCE,
 } from "./constants";
-import { callBalanceOf, callTransfer } from "./helpers/web3";
+import {
+  callBalanceOf,
+  callTransfer,
+  getAllBuyer,
+  buyInsurance,
+} from "./helpers/web3";
 
 const SLayout = styled.div`
   position: relative;
@@ -104,8 +111,15 @@ const STestButton = styled(Button)`
   font-size: ${fonts.size.medium};
   height: 44px;
   width: 100%;
-  max-width: 175px;
   margin: 12px;
+  cursor: pointer;
+`;
+
+const Box = styled.div`
+  padding: 1rem 2rem;
+  background: #d5d9d5;
+  margin-bottom: 0.5rem;
+  border-radius: 4px;
 `;
 
 interface IAppState {
@@ -120,6 +134,7 @@ interface IAppState {
   showModal: boolean;
   pendingRequest: boolean;
   result: any | null;
+  list_insurance: Array<any>;
 }
 
 const INITIAL_STATE: IAppState = {
@@ -133,7 +148,8 @@ const INITIAL_STATE: IAppState = {
   assets: [],
   showModal: false,
   pendingRequest: false,
-  result: null
+  result: null,
+  list_insurance: [],
 };
 
 function initWeb3(provider: any) {
@@ -144,9 +160,9 @@ function initWeb3(provider: any) {
       {
         name: "chainId",
         call: "eth_chainId",
-        outputFormatter: web3.utils.hexToNumber
-      }
-    ]
+        outputFormatter: web3.utils.hexToNumber,
+      },
+    ],
   });
 
   return web3;
@@ -156,17 +172,18 @@ class App extends React.Component<any, any> {
   // @ts-ignore
   public web3Modal: Web3Modal;
   public state: IAppState;
+  public toast: any;
 
   constructor(props: any) {
     super(props);
     this.state = {
-      ...INITIAL_STATE
+      ...INITIAL_STATE,
     };
 
     this.web3Modal = new Web3Modal({
       network: this.getNetwork(),
       cacheProvider: true,
-      providerOptions: this.getProviderOptions()
+      providerOptions: this.getProviderOptions(),
     });
   }
 
@@ -198,7 +215,7 @@ class App extends React.Component<any, any> {
       connected: true,
       address,
       chainId,
-      networkId
+      networkId,
     });
     await this.getAccountAssets();
   };
@@ -235,21 +252,44 @@ class App extends React.Component<any, any> {
       walletconnect: {
         package: WalletConnect,
         options: {
-          infuraId
-        }
+          infuraId,
+        },
       },
       torus: {
-        package: Torus
+        package: Torus,
       },
       coinbasewallet: {
         package: CoinbaseWalletSDK,
         options: {
           appName: "Web3Modal Example App",
-          infuraId
-        }
-      }
+          infuraId,
+        },
+      },
     };
     return providerOptions;
+  };
+
+  public getInsurance = async () => {
+    const { web3, chainId, address } = this.state;
+
+    const all_insurance = await getAllBuyer(chainId, web3);
+
+    const filter = all_insurance.filter((val: any) => val[0] === address);
+
+    this.setState({ list_insurance: filter });
+  };
+
+  public _buyInsurance = async () => {
+    const { web3, chainId, address } = this.state;
+
+    const _ = await buyInsurance(address, chainId, web3);
+
+    if (_) {
+      Swal.fire({
+        title: "Buy insurance successfully!",
+        icon: "success",
+      });
+    }
   };
 
   public getAccountAssets = async () => {
@@ -304,14 +344,14 @@ class App extends React.Component<any, any> {
         txHash: result,
         from: address,
         to: address,
-        value: "0 ETH"
+        value: "0 ETH",
       };
 
       // display result
       this.setState({
         web3,
         pendingRequest: false,
-        result: formattedResult || null
+        result: formattedResult || null,
       });
     } catch (error) {
       console.error(error); // tslint:disable-line
@@ -352,14 +392,14 @@ class App extends React.Component<any, any> {
         address,
         signer,
         verified,
-        result
+        result,
       };
 
       // display result
       this.setState({
         web3,
         pendingRequest: false,
-        result: formattedResult || null
+        result: formattedResult || null,
       });
     } catch (error) {
       console.error(error); // tslint:disable-line
@@ -400,14 +440,14 @@ class App extends React.Component<any, any> {
         address,
         signer,
         verified,
-        result
+        result,
       };
 
       // display result
       this.setState({
         web3,
         pendingRequest: false,
-        result: formattedResult || null
+        result: formattedResult || null,
       });
     } catch (error) {
       console.error(error); // tslint:disable-line
@@ -436,6 +476,7 @@ class App extends React.Component<any, any> {
     }
 
     const { web3, address, chainId } = this.state;
+
     try {
       // open modal
       this.toggleModal();
@@ -449,14 +490,14 @@ class App extends React.Component<any, any> {
       // format displayed result
       const formattedResult = {
         action: functionSig,
-        result
+        result,
       };
 
       // display result
       this.setState({
         web3,
         pendingRequest: false,
-        result: formattedResult || null
+        result: formattedResult || null,
       });
     } catch (error) {
       console.error(error); // tslint:disable-line
@@ -482,8 +523,10 @@ class App extends React.Component<any, any> {
       fetching,
       showModal,
       pendingRequest,
-      result
+      result,
+      list_insurance,
     } = this.state;
+
     return (
       <SLayout>
         <Column maxWidth={1000} spanHeight>
@@ -493,6 +536,7 @@ class App extends React.Component<any, any> {
             chainId={chainId}
             killSession={this.resetApp}
           />
+
           <SContent>
             {fetching ? (
               <Column center>
@@ -502,6 +546,8 @@ class App extends React.Component<any, any> {
               </Column>
             ) : !!assets && !!assets.length ? (
               <SBalances>
+                <h3>Balances</h3>
+                <AccountAssets chainId={chainId} assets={assets} />
                 <h3>Actions</h3>
                 <Column center>
                   <STestButtonContainer>
@@ -516,6 +562,7 @@ class App extends React.Component<any, any> {
                     <STestButton left onClick={this.testSignPersonalMessage}>
                       {PERSONAL_SIGN}
                     </STestButton>
+
                     <STestButton
                       left
                       onClick={() => this.testContractCall(DAI_BALANCE_OF)}
@@ -529,14 +576,37 @@ class App extends React.Component<any, any> {
                     >
                       {DAI_TRANSFER}
                     </STestButton>
+
+                    <STestButton left onClick={this._buyInsurance}>
+                      {BUY_INSURANCE}
+                    </STestButton>
+
+                    <STestButton left onClick={this.getInsurance}>
+                      {GET_ALL_BUYER}
+                    </STestButton>
                   </STestButtonContainer>
                 </Column>
-                <h3>Balances</h3>
-                <AccountAssets chainId={chainId} assets={assets} />{" "}
+
+                <Column>
+                  {list_insurance ? (
+                    list_insurance.map((value, index) => {
+                      return (
+                        <Box key={index}>
+                          <p>Deposit: {value["deposit"]}</p>
+                          <p>Liquidation price: {value["liquidation_price"]}</p>
+                          <p>Expired: {value["timestamp"]}</p>
+                          <p>ETH: {value["current_price"]}</p>
+                        </Box>
+                      );
+                    })
+                  ) : (
+                    <p>Please Buy Insurance!!!</p>
+                  )}
+                </Column>
               </SBalances>
             ) : (
               <SLanding center>
-                <h3>{`Test Web3Modal`}</h3>
+                <h3>{`Connect wallet`}</h3>
                 <ConnectButton onClick={this.onConnect} />
               </SLanding>
             )}

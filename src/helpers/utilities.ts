@@ -7,7 +7,7 @@ import { convertAmountToRawNumber, convertStringToHex } from "./bignumber";
 export function capitalize(string: string): string {
   return string
     .split(" ")
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(" ");
 }
 
@@ -24,7 +24,7 @@ export function ellipseText(
   const result =
     text
       .split(" ")
-      .filter(word => {
+      .filter((word) => {
         currentLength += word.length;
         if (ellipse || currentLength >= _maxLength) {
           ellipse = true;
@@ -114,7 +114,7 @@ export function getChainData(chainId: number): IChainData {
     throw new Error("ChainId missing or not supported");
   }
 
-  const API_KEY = process.env.REACT_APP_INFURA_ID;
+  const API_KEY = "f87b967bc65a41c0a1a25635493fa482";
 
   if (
     chainData.rpc_url.includes("infura.io") &&
@@ -125,7 +125,7 @@ export function getChainData(chainId: number): IChainData {
 
     return {
       ...chainData,
-      rpc_url: rpcUrl
+      rpc_url: rpcUrl,
     };
   }
 
@@ -195,7 +195,7 @@ export async function formatTestTransaction(address: string, chainId: number) {
     gasPrice,
     gasLimit,
     value,
-    data
+    data,
   };
 
   return tx;
